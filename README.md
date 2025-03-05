@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Disperse Web UI
 
-## Getting Started
+A modern web interface for the Disperse token transfer tool for WAX blockchain.
 
-First, run the development server:
+## Features
+
+- User-friendly interface for token transfers
+- CSV upload for batch processing
+- Manual input option for recipients
+- Real-time logging and transaction feedback
+- Batch processing with configurable settings
+- Detailed transaction status and reporting
+
+## Prerequisites
+
+- Node.js 16+ and npm/yarn
+- Active WAX account with sufficient tokens
+- Private key with active permission
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) with your browser
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+# or
+yarn build
+yarn start
+```
 
-## Learn More
+## Using the Web UI
 
-To learn more about Next.js, take a look at the following resources:
+### Configuration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Navigate to the "Configuration" tab
+2. Enter your WAX account settings:
+   - RPC API Endpoint: Choose a WAX API endpoint
+   - Private Key: Your account's active private key
+   - Sender Account: Your WAX account name
+   - Token Contract: Contract for the token you want to send
+   - Token Symbol: Symbol of the token (e.g., WAX, TLM)
+   - Token Precision: Decimal precision for the token
+   - Memo: Optional memo to include with transfers
+   - Batch Size: Number of transfers per blockchain transaction
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Adding Recipients
 
-## Deploy on Vercel
+You can add recipients in two ways:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+#### Upload CSV
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Navigate to the "Upload CSV" tab
+2. Drag and drop a CSV file or click to browse
+3. The CSV must have headers: `receiverName,amount`
+4. Review the preview to confirm data is parsed correctly
+
+#### Manual Input
+
+1. Navigate to the "Manual Input" tab
+2. Enter account names and amounts manually
+3. Click "Add Recipient" for additional entries
+4. Click "Save Recipients" when done
+
+### Processing Transfers
+
+1. After configuring settings and adding recipients
+2. Click "Start Processing" to begin transfers
+3. Monitor progress in the "Logs" tab
+4. When complete, you can download logs for record-keeping
+
+## Security Notes
+
+- Your private key is only used client-side for signing transactions
+- The private key is never stored or sent to any server
+- For additional security, consider running this tool locally
