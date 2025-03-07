@@ -98,7 +98,7 @@ export async function sendTokenTransfer(session, recipients, config) {
             quantity: `${recipient.amount.toFixed(config.tokenPrecision)} ${
               config.tokenName
             }`,
-            memo: config.memo || "",
+            memo: recipient.memo || config.defaultMemo || "",
           },
         }));
 

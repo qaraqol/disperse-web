@@ -12,11 +12,11 @@ export default function Home() {
 
   // Initialize with default config
   const [config, setConfig] = useState({
-    rpcApi: "https://wax.qaraqol.com",
-    contractName: "", // Will be populated from token selector
-    tokenName: "", // Will be populated from token selector
+    rpcApi: "https://wax.qaraqol.com", // Fixed RPC endpoint, no longer user-configurable
+    contractName: "",
+    tokenName: "",
     tokenPrecision: 4,
-    memo: "Disperse",
+    defaultMemo: "Disperse", // Now a default memo
     batchSize: 15,
   });
 
@@ -26,7 +26,12 @@ export default function Home() {
       try {
         const savedConfig = localStorage.getItem("disperseConfig");
         if (savedConfig) {
-          setConfig(JSON.parse(savedConfig));
+          const loadedConfig = JSON.parse(savedConfig);
+          // Always use the default RPC endpoint
+          setConfig({
+            ...loadedConfig,
+            rpcApi: "https://wax.qaraqol.com",
+          });
         }
       } catch (err) {
         console.error("Failed to load config from localStorage:", err);
@@ -48,12 +53,18 @@ export default function Home() {
   };
 
   const handleConfigUpdate = (newConfig) => {
-    setConfig(newConfig);
+    // Ensure the RPC endpoint remains fixed
+    const updatedConfig = {
+      ...newConfig,
+      rpcApi: "https://wax.qaraqol.com",
+    };
+
+    setConfig(updatedConfig);
 
     // Store the updated config in localStorage for persistence
     try {
       if (typeof window !== "undefined") {
-        localStorage.setItem("disperseConfig", JSON.stringify(newConfig));
+        localStorage.setItem("disperseConfig", JSON.stringify(updatedConfig));
       }
     } catch (err) {
       console.error("Failed to save config to localStorage:", err);
@@ -88,22 +99,27 @@ export default function Home() {
       let totalAmount = 0;
 
       lines.forEach((line, lineIndex) => {
-        let receiverName, amount;
+        let parts = [];
+        let receiverName, amount, memo;
 
-        // Check for CSV format: receiverName,amount
+        // Try to parse based on commas
         if (line.includes(",")) {
-          [receiverName, amount] = line
-            .split(",", 2)
-            .map((part) => part.trim());
+          parts = line.split(",").map((part) => part.trim());
+
+          if (parts.length >= 1) receiverName = parts[0];
+          if (parts.length >= 2) amount = parts[1];
+          if (parts.length >= 3) memo = parts[2];
         }
-        // Check for space-separated format: receiverName amount
+        // Try space-separated format as fallback
         else {
-          const parts = line.split(/\s+/);
-          if (parts.length >= 2) {
-            receiverName = parts[0].trim();
-            amount = parts[1].trim();
-          }
+          parts = line.split(/\s+/);
+          if (parts.length >= 1) receiverName = parts[0];
+          if (parts.length >= 2) amount = parts[1];
+          // No memo support for space-separated format
         }
+
+        // Use default memo if not specified
+        memo = memo || config.defaultMemo;
 
         // Validate receiver name
         if (!receiverName) {
@@ -128,6 +144,7 @@ export default function Home() {
           parsedRecipients.push({
             receiverName,
             amount: parsedAmount,
+            memo: memo,
           });
         }
       });
@@ -279,17 +296,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-bold text-gray-900 text-center">
             Disperse Token Tool
           </h1>
-          <div className="flex items-center">
-            <WalletLogin
-              onLogin={handleWalletLogin}
-              onLogout={handleWalletLogout}
-              walletData={walletData}
-            />
-          </div>
         </div>
       </header>
 
@@ -316,225 +326,250 @@ export default function Home() {
           )}
 
           {activeTab === "transfer" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Token Selection */}
-                <div>
-                  <TokenSelector
-                    walletAccount={walletData?.account}
-                    onTokenSelect={handleTokenSelect}
-                    isProcessing={isProcessing}
-                  />
+            <div>
+              {!walletData ? (
+                // Centered wallet login when not connected
+                <div className="flex justify-center items-center py-12">
+                  <div className="text-center">
+                    <h2 className="text-xl font-semibold mb-6 text-gray-700">
+                      Connect Your Wallet to Begin
+                    </h2>
+                    <WalletLogin
+                      onLogin={handleWalletLogin}
+                      onLogout={handleWalletLogout}
+                      walletData={walletData}
+                    />
+                  </div>
                 </div>
-
-                {/* Advanced Settings */}
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Advanced Settings
-                  </h2>
-                  <div>
-                    <label
-                      htmlFor="memo"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Memo
-                    </label>
-                    <input
-                      type="text"
-                      name="memo"
-                      id="memo"
-                      value={config.memo}
-                      onChange={(e) =>
-                        handleConfigUpdate({
-                          ...config,
-                          memo: e.target.value,
-                        })
-                      }
-                      disabled={isProcessing}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                      placeholder="Disperse"
+              ) : (
+                // Main content when wallet is connected
+                <div className="space-y-6">
+                  {/* Wallet info at top */}
+                  <div className="flex justify-end">
+                    <WalletLogin
+                      onLogin={handleWalletLogin}
+                      onLogout={handleWalletLogout}
+                      walletData={walletData}
                     />
                   </div>
-                  <div>
-                    <label
-                      htmlFor="rpcApi"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      RPC API Endpoint <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="rpcApi"
-                      id="rpcApi"
-                      value={config.rpcApi}
-                      onChange={(e) =>
-                        handleConfigUpdate({
-                          ...config,
-                          rpcApi: e.target.value,
-                        })
-                      }
-                      disabled={isProcessing}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                      placeholder="https://wax.qaraqol.com"
-                      required
-                    />
-                    <p className="mt-1 text-sm text-gray-500">
-                      WAX blockchain RPC endpoint
-                    </p>
-                  </div>
 
-                  <div>
-                    <label
-                      htmlFor="batchSize"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Batch Size <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="batchSize"
-                      id="batchSize"
-                      value={config.batchSize}
-                      onChange={(e) =>
-                        handleConfigUpdate({
-                          ...config,
-                          batchSize:
-                            e.target.value === "" ? "" : Number(e.target.value),
-                        })
-                      }
-                      disabled={isProcessing}
-                      min="1"
-                      max="50"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                      required
-                    />
-                    <p className="mt-1 text-sm text-gray-500">
-                      Number of transfers per transaction (Recommended: 10-15)
-                    </p>
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Token Selection */}
+                    <div>
+                      <TokenSelector
+                        walletAccount={walletData?.account}
+                        onTokenSelect={handleTokenSelect}
+                        isProcessing={isProcessing}
+                      />
+                    </div>
 
-                  {config.contractName && config.tokenName && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded-md">
-                      <h3 className="text-sm font-medium text-green-800">
-                        Selected Token
-                      </h3>
-                      <div className="mt-1 grid grid-cols-2 gap-2 text-sm">
+                    {/* Simple Settings */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-semibold">
+                          Transfer Settings
+                        </h2>
+                        {config.contractName && config.tokenName && (
+                          <div className="px-3 py-1 bg-green-50 border border-green-100 rounded-md text-sm text-green-800">
+                            <span className="font-medium">
+                              {config.tokenName}
+                            </span>{" "}
+                            selected
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-gray-600">Token:</p>
-                          <p className="font-medium">{config.tokenName}</p>
+                          <label
+                            htmlFor="defaultMemo"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            Default Memo
+                          </label>
+                          <input
+                            type="text"
+                            name="defaultMemo"
+                            id="defaultMemo"
+                            value={config.defaultMemo}
+                            onChange={(e) =>
+                              handleConfigUpdate({
+                                ...config,
+                                defaultMemo: e.target.value,
+                              })
+                            }
+                            disabled={isProcessing}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                            placeholder="Disperse"
+                          />
                         </div>
+
                         <div>
-                          <p className="text-gray-600">Contract:</p>
-                          <p className="font-medium">{config.contractName}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Precision:</p>
-                          <p className="font-medium">{config.tokenPrecision}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Balance:</p>
-                          <p className="font-medium">{selectedTokenBalance}</p>
+                          <label
+                            htmlFor="batchSize"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            Batch Size
+                          </label>
+                          <input
+                            type="number"
+                            name="batchSize"
+                            id="batchSize"
+                            value={config.batchSize}
+                            onChange={(e) =>
+                              handleConfigUpdate({
+                                ...config,
+                                batchSize:
+                                  e.target.value === ""
+                                    ? ""
+                                    : Number(e.target.value),
+                              })
+                            }
+                            disabled={isProcessing}
+                            min="1"
+                            max="50"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                            required
+                          />
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Recipients Input */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-1">
-                    <label
-                      htmlFor="recipientsInput"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Enter Recipients (one per line)
-                    </label>
-                    {recipientsInput && (
-                      <button
-                        onClick={() => setRecipientsInput("")}
-                        className="text-xs text-red-600 hover:text-red-800"
-                        disabled={isProcessing}
-                      >
-                        Clear
-                      </button>
-                    )}
+                      {config.contractName && config.tokenName && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-md">
+                          <h3 className="text-sm font-medium text-blue-800 mb-2">
+                            Token Details
+                          </h3>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Symbol:</span>
+                              <span className="font-medium">
+                                {config.tokenName}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Contract:</span>
+                              <span className="font-medium text-xs">
+                                {config.contractName}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Precision:</span>
+                              <span className="font-medium">
+                                {config.tokenPrecision}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Balance:</span>
+                              <span className="font-medium">
+                                {selectedTokenBalance}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <textarea
-                    id="recipientsInput"
-                    rows={8}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
-                    value={recipientsInput}
-                    onChange={(e) => setRecipientsInput(e.target.value)}
-                    placeholder="account1,1.0000&#10;account2,2.5000&#10;account3,3.0000"
-                    disabled={isProcessing}
-                  ></textarea>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Format: "account,amount" or "account amount" (one entry per
-                    line)
-                  </p>
 
-                  {validationError && (
-                    <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded-md">
-                      <p className="text-xs text-red-600 whitespace-pre-line">
-                        {validationError}
-                      </p>
+                  {/* Recipients Input with Special Styling */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="mb-4">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-lg border border-blue-200">
+                        <div className="flex justify-between items-center mb-2">
+                          <label
+                            htmlFor="recipientsInput"
+                            className="block text-sm font-medium text-blue-700"
+                          >
+                            <span className="border-b-2 border-blue-400 pb-0.5">
+                              Enter Recipients (one per line)
+                            </span>
+                          </label>
+                          {recipientsInput && (
+                            <button
+                              onClick={() => setRecipientsInput("")}
+                              className="text-xs text-red-600 hover:text-red-800"
+                              disabled={isProcessing}
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                        <textarea
+                          id="recipientsInput"
+                          rows={8}
+                          className="block w-full rounded-md border-blue-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm bg-white"
+                          value={recipientsInput}
+                          onChange={(e) => setRecipientsInput(e.target.value)}
+                          placeholder="account1,1.0000,Payment for services&#10;account2,2.5000,Refund&#10;account3,3.0000"
+                          disabled={isProcessing}
+                        ></textarea>
+                        <p className="mt-2 text-xs text-blue-700">
+                          Format: "account,amount,memo" (memo is optional, one
+                          entry per line)
+                        </p>
+
+                        {validationError && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded-md">
+                            <p className="text-xs text-red-600 whitespace-pre-line">
+                              {validationError}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Transfer Button */}
-              <div className="pt-4 border-t border-gray-200 flex justify-end">
-                <button
-                  onClick={handleStartProcess}
-                  disabled={
-                    !config.senderName ||
-                    !config.contractName ||
-                    !config.tokenName ||
-                    !recipientsInput.trim() ||
-                    isProcessing
-                  }
-                  className={`px-6 py-3 rounded-md text-base font-medium ${
-                    !config.senderName ||
-                    !config.contractName ||
-                    !config.tokenName ||
-                    !recipientsInput.trim() ||
-                    isProcessing
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  {isProcessing ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    "Transfer Tokens"
-                  )}
-                </button>
-              </div>
+                  {/* Transfer Button */}
+                  <div className="pt-4 border-t border-gray-200 flex justify-end">
+                    <button
+                      onClick={handleStartProcess}
+                      disabled={
+                        !config.senderName ||
+                        !config.contractName ||
+                        !config.tokenName ||
+                        !recipientsInput.trim() ||
+                        isProcessing
+                      }
+                      className={`px-6 py-3 rounded-md text-base font-medium ${
+                        !config.senderName ||
+                        !config.contractName ||
+                        !config.tokenName ||
+                        !recipientsInput.trim() ||
+                        isProcessing
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        "Transfer Tokens"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
