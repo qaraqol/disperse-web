@@ -6,8 +6,7 @@ A modern web interface for distributing tokens on the WAX blockchain, allowing f
 
 - **User-friendly web interface**: Modern UI built with Next.js and Tailwind CSS
 - **Support for multiple wallets**: Connect using WAX Cloud Wallet or Anchor
-- **CSV upload**: Batch process transfers from CSV files
-- **Manual input**: Add recipients manually with validation
+- **Simple recipient input**: Add recipients directly in text format
 - **Batched transfers**: Efficiently process transactions in configurable batches
 - **Persistent settings**: Configurations are saved between sessions
 - **Real-time transaction status**: Clear feedback on transaction progress and results
@@ -18,7 +17,6 @@ A modern web interface for distributing tokens on the WAX blockchain, allowing f
 - **Next.js** (App Router): For modern React application structure
 - **Tailwind CSS**: For styling and responsive design
 - **WharfKit**: For blockchain wallet integration
-- **PapaParse**: For CSV processing
 - **EOSJS**: For blockchain interactions
 
 ## Prerequisites
@@ -32,7 +30,7 @@ A modern web interface for distributing tokens on the WAX blockchain, allowing f
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/disperse-web.git
+git clone https://github.com/qaraqol/disperse-web.git
 cd disperse-web
 ```
 
@@ -69,53 +67,46 @@ yarn start
 ### Connecting Your Wallet
 
 1. Open the application in your browser
-2. Click the "Connect Wallet" button
-3. Choose either WAX Cloud Wallet or Anchor
+2. Click the "Connect Wallet" button in the top-right corner
+3. Choose either WAX Cloud Wallet or Anchor from the wallet plugin dialog
 4. Complete the authentication process in the popup window
 5. Your wallet will now be connected, showing your account name
 
 ### Configuring Token Settings
 
-1. Navigate to the "Configuration" tab
-2. Configure token settings:
+1. On the main Transfer Tokens page, configure your token settings:
+
    - Token Contract: The contract that issued the token (e.g., "eosio.token" for WAX, "alien.worlds" for TLM)
    - Token Symbol: The token symbol (e.g., "WAX", "TLM")
    - Token Precision: The decimal precision for the token (WAX: 8, TLM: 4)
    - Memo: Optional memo to include with transfers
+
+2. Advanced settings (on the same page):
+   - RPC API Endpoint: The WAX blockchain endpoint (default: https://wax.qaraqol.com)
    - Batch Size: Number of transfers per transaction (recommended: 10-15)
-3. Click "Save Configuration"
+
+The application automatically saves your settings for future use.
 
 ### Adding Recipients
 
-You can add recipients in two ways:
+Add recipients directly in the text input area:
 
-#### Upload CSV
-
-1. Navigate to the "Upload CSV" tab
-2. Drag and drop a CSV file or click to browse
-3. The CSV must have headers: `receiverName,amount`
-4. Example:
+1. Use one entry per line
+2. Format each entry as `accountname,amount` or `accountname amount`
+3. Example:
    ```
-   receiverName,amount
    account1,1
    account2,0.5
    account3,10
    ```
-5. Review the preview to confirm data is parsed correctly
-
-#### Manual Input
-
-1. Navigate to the "Manual Input" tab
-2. Enter account names and amounts manually
-3. Click "Add Recipient" for additional entries
-4. Click "Save Recipients" when finished
 
 ### Processing Transfers
 
 1. After configuring settings and adding recipients
-2. Click "Start Processing" to begin transfers
+2. Click "Transfer Tokens" to begin transfers
 3. Approve the transaction in your wallet when prompted
 4. View transaction status and results on the screen
+5. View detailed logs in the Transaction Logs tab
 
 ## Security Notes
 
@@ -126,7 +117,7 @@ You can add recipients in two ways:
 
 ## Credits
 
-This project is an extension of the original Disperse CLI tool, adding a web interface for improved usability.
+This tool was built by [Qaraqol](https://qaraqol.com) using Next.js and blockchain technologies.
 
 ## License
 
