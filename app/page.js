@@ -9,29 +9,31 @@ import { sendTokenTransfer } from "./lib/walletAuth";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("transfer");
-  const [config, setConfig] = useState(() => {
-    // Try to load config from localStorage on initial load
+
+  // Initialize with default config
+  const [config, setConfig] = useState({
+    rpcApi: "https://wax.qaraqol.com",
+    contractName: "", // Will be populated from token selector
+    tokenName: "", // Will be populated from token selector
+    tokenPrecision: 4,
+    memo: "Disperse",
+    batchSize: 15,
+  });
+
+  // Load config from localStorage after mount
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
         const savedConfig = localStorage.getItem("disperseConfig");
         if (savedConfig) {
-          return JSON.parse(savedConfig);
+          setConfig(JSON.parse(savedConfig));
         }
       } catch (err) {
         console.error("Failed to load config from localStorage:", err);
       }
     }
+  }, []);
 
-    // Default config if nothing in localStorage
-    return {
-      rpcApi: "https://wax.qaraqol.com",
-      contractName: "", // Will be populated from token selector
-      tokenName: "", // Will be populated from token selector
-      tokenPrecision: 4,
-      memo: "Disperse",
-      batchSize: 15,
-    };
-  });
   const [recipientsInput, setRecipientsInput] = useState("");
   const [validationError, setValidationError] = useState("");
   const [logs, setLogs] = useState([]);
