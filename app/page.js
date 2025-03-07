@@ -499,7 +499,7 @@ export default function Home() {
                           className="block w-full rounded-md border-blue-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm bg-white"
                           value={recipientsInput}
                           onChange={(e) => setRecipientsInput(e.target.value)}
-                          placeholder="account1,1.0000,Payment for services&#10;account2,2.5000,Refund&#10;account3,3.0000"
+                          placeholder="account1,1.0000,Payment for services"
                           disabled={isProcessing}
                         ></textarea>
                         <p className="mt-2 text-xs text-blue-700">
