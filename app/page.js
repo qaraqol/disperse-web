@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TransactionLogs from "./components/TransactionLogs";
 import TransactionStatus from "./components/TransactionStatus";
 import WalletLogin from "./components/WalletLogin";
+import TokenSelector from "./components/TokenSelector";
 import { sendTokenTransfer } from "./lib/walletAuth";
 
 export default function Home() {
@@ -24,9 +25,9 @@ export default function Home() {
     // Default config if nothing in localStorage
     return {
       rpcApi: "https://wax.qaraqol.com",
-      contractName: "alien.worlds", // eosio.token for WAX tokens
-      tokenName: "TLM",
-      tokenPrecision: 4, // Common include 8 for WAX and 4 for TLM
+      contractName: "", // Will be populated from token selector
+      tokenName: "", // Will be populated from token selector
+      tokenPrecision: 4,
       memo: "Disperse",
       batchSize: 15,
     };
@@ -37,6 +38,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [walletData, setWalletData] = useState(null);
+  const [selectedTokenBalance, setSelectedTokenBalance] = useState(null);
 
   const addLog = (message, type = "info") => {
     const timestamp = new Date().toISOString();
@@ -56,6 +58,16 @@ export default function Home() {
     }
   };
 
+  const handleTokenSelect = (tokenData) => {
+    handleConfigUpdate({
+      ...config,
+      contractName: tokenData.contractName,
+      tokenName: tokenData.tokenName,
+      tokenPrecision: tokenData.tokenPrecision,
+    });
+    setSelectedTokenBalance(tokenData.balance);
+  };
+
   const validateAndParseRecipients = () => {
     if (!recipientsInput.trim()) {
       setValidationError("Please add at least one recipient");
@@ -71,6 +83,7 @@ export default function Home() {
 
       const errors = [];
       const parsedRecipients = [];
+      let totalAmount = 0;
 
       lines.forEach((line, lineIndex) => {
         let receiverName, amount;
@@ -107,12 +120,25 @@ export default function Home() {
         }
 
         if (receiverName && amount && !isNaN(amount) && Number(amount) > 0) {
+          const parsedAmount = Number(amount);
+          totalAmount += parsedAmount;
+
           parsedRecipients.push({
             receiverName,
-            amount: Number(amount),
+            amount: parsedAmount,
           });
         }
       });
+
+      // Check if total amount exceeds available balance
+      if (
+        selectedTokenBalance &&
+        totalAmount > parseFloat(selectedTokenBalance)
+      ) {
+        errors.push(
+          `Total amount (${totalAmount}) exceeds your available balance (${selectedTokenBalance})`
+        );
+      }
 
       if (errors.length > 0) {
         setValidationError(
@@ -148,6 +174,12 @@ export default function Home() {
       return;
     }
 
+    // Check if token is selected
+    if (!config.contractName || !config.tokenName) {
+      setTransactionStatus({ error: "Please select a token first" });
+      return;
+    }
+
     // Validate and parse recipients
     const parsedRecipients = validateAndParseRecipients();
     if (!parsedRecipients) {
@@ -160,7 +192,7 @@ export default function Home() {
     // Start processing
     setIsProcessing(true);
     addLog(
-      `Starting to process ${recipientCount} transfers in batches of ${config.batchSize}`
+      `Starting to process ${recipientCount} transfers of ${config.tokenName} in batches of ${config.batchSize}`
     );
 
     try {
@@ -233,6 +265,7 @@ export default function Home() {
       ...prev,
       senderName: "",
     }));
+    setSelectedTokenBalance(null);
     addLog("Disconnected from wallet", "info");
   };
 
@@ -283,97 +316,20 @@ export default function Home() {
           {activeTab === "transfer" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Token Configuration */}
+                {/* Token Selection */}
+                <div>
+                  <TokenSelector
+                    walletAccount={walletData?.account}
+                    onTokenSelect={handleTokenSelect}
+                    isProcessing={isProcessing}
+                  />
+                </div>
+
+                {/* Advanced Settings */}
                 <div className="space-y-4">
-                  <h2 className="text-xl font-semibold mb-4">Token Settings</h2>
-                  <div>
-                    <label
-                      htmlFor="contractName"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Token Contract <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="contractName"
-                      id="contractName"
-                      value={config.contractName}
-                      onChange={(e) =>
-                        handleConfigUpdate({
-                          ...config,
-                          contractName: e.target.value,
-                        })
-                      }
-                      disabled={isProcessing}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                      placeholder="eosio.token"
-                      required
-                    />
-                    <p className="mt-1 text-sm text-gray-500">
-                      Contract name (e.g., eosio.token for WAX, alien.worlds for
-                      TLM)
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="tokenName"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Token Symbol <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="tokenName"
-                        id="tokenName"
-                        value={config.tokenName}
-                        onChange={(e) =>
-                          handleConfigUpdate({
-                            ...config,
-                            tokenName: e.target.value,
-                          })
-                        }
-                        disabled={isProcessing}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                        placeholder="WAX"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="tokenPrecision"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Token Precision <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        name="tokenPrecision"
-                        id="tokenPrecision"
-                        value={config.tokenPrecision}
-                        onChange={(e) =>
-                          handleConfigUpdate({
-                            ...config,
-                            tokenPrecision:
-                              e.target.value === ""
-                                ? ""
-                                : Number(e.target.value),
-                          })
-                        }
-                        disabled={isProcessing}
-                        min="0"
-                        max="18"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                        required
-                      />
-                      <p className="mt-1 text-sm text-gray-500">
-                        WAX: 8, TLM: 4
-                      </p>
-                    </div>
-                  </div>
-
+                  <h2 className="text-xl font-semibold mb-4">
+                    Advanced Settings
+                  </h2>
                   <div>
                     <label
                       htmlFor="memo"
@@ -397,13 +353,6 @@ export default function Home() {
                       placeholder="Disperse"
                     />
                   </div>
-                </div>
-
-                {/* Advanced Settings */}
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Advanced Settings
-                  </h2>
                   <div>
                     <label
                       htmlFor="rpcApi"
@@ -461,6 +410,32 @@ export default function Home() {
                       Number of transfers per transaction (Recommended: 10-15)
                     </p>
                   </div>
+
+                  {config.contractName && config.tokenName && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded-md">
+                      <h3 className="text-sm font-medium text-green-800">
+                        Selected Token
+                      </h3>
+                      <div className="mt-1 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-gray-600">Token:</p>
+                          <p className="font-medium">{config.tokenName}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Contract:</p>
+                          <p className="font-medium">{config.contractName}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Precision:</p>
+                          <p className="font-medium">{config.tokenPrecision}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Balance:</p>
+                          <p className="font-medium">{selectedTokenBalance}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -514,11 +489,15 @@ export default function Home() {
                   onClick={handleStartProcess}
                   disabled={
                     !config.senderName ||
+                    !config.contractName ||
+                    !config.tokenName ||
                     !recipientsInput.trim() ||
                     isProcessing
                   }
                   className={`px-6 py-3 rounded-md text-base font-medium ${
                     !config.senderName ||
+                    !config.contractName ||
+                    !config.tokenName ||
                     !recipientsInput.trim() ||
                     isProcessing
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"

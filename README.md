@@ -6,6 +6,8 @@ A modern web interface for distributing tokens on the WAX blockchain, allowing f
 
 - **User-friendly web interface**: Modern UI built with Next.js and Tailwind CSS
 - **Support for multiple wallets**: Connect using WAX Cloud Wallet or Anchor
+- **Automatic token detection**: Loads tokens with balances directly from your wallet
+- **Balance checking**: Validates transfers against your available token balance
 - **Simple recipient input**: Add recipients directly in text format
 - **Batched transfers**: Efficiently process transactions in configurable batches
 - **Persistent settings**: Configurations are saved between sessions
@@ -18,6 +20,7 @@ A modern web interface for distributing tokens on the WAX blockchain, allowing f
 - **Tailwind CSS**: For styling and responsive design
 - **WharfKit**: For blockchain wallet integration
 - **EOSJS**: For blockchain interactions
+- **Qaraqol API**: For fetching token balances
 
 ## Prerequisites
 
@@ -30,7 +33,7 @@ A modern web interface for distributing tokens on the WAX blockchain, allowing f
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/qaraqol/disperse-web.git
+git clone https://github.com/yourusername/disperse-web.git
 cd disperse-web
 ```
 
@@ -72,20 +75,14 @@ yarn start
 4. Complete the authentication process in the popup window
 5. Your wallet will now be connected, showing your account name
 
-### Configuring Token Settings
+### Selecting a Token
 
-1. On the main Transfer Tokens page, configure your token settings:
+After connecting your wallet:
 
-   - Token Contract: The contract that issued the token (e.g., "eosio.token" for WAX, "alien.worlds" for TLM)
-   - Token Symbol: The token symbol (e.g., "WAX", "TLM")
-   - Token Precision: The decimal precision for the token (WAX: 8, TLM: 4)
-   - Memo: Optional memo to include with transfers
-
-2. Advanced settings (on the same page):
-   - RPC API Endpoint: The WAX blockchain endpoint (default: https://wax.qaraqol.com)
-   - Batch Size: Number of transfers per transaction (recommended: 10-15)
-
-The application automatically saves your settings for future use.
+1. The application automatically fetches tokens with balances from your account
+2. Click on any token in the list to select it
+3. The token's details (contract, symbol, precision) will be automatically populated
+4. Your available balance will be shown and used for validation
 
 ### Adding Recipients
 
@@ -99,11 +96,20 @@ Add recipients directly in the text input area:
    account2,0.5
    account3,10
    ```
+4. The system will automatically validate that the total doesn't exceed your balance
+
+### Advanced Settings
+
+You can customize:
+
+- Memo: Optional message to include with the transfers
+- RPC API Endpoint: Default is https://wax.qaraqol.com
+- Batch Size: Number of transfers per transaction (recommended: 10-15)
 
 ### Processing Transfers
 
-1. After configuring settings and adding recipients
-2. Click "Transfer Tokens" to begin transfers
+1. After selecting a token and adding recipients
+2. Click "Transfer Tokens" to begin
 3. Approve the transaction in your wallet when prompted
 4. View transaction status and results on the screen
 5. View detailed logs in the Transaction Logs tab
