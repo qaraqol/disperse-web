@@ -151,7 +151,7 @@ const RecipientsInput = ({
           value={value}
           onChange={handleInputChange}
           onBlur={validateAndParseRecipients}
-          placeholder="account1,1.0000,Payment for services&#10;account2,2.5000,Refund&#10;account3,3.0000"
+          placeholder="account1,1.0000,Payment for services"
           disabled={isProcessing}
         ></textarea>
 
