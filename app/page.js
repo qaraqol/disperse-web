@@ -5,6 +5,8 @@ import TransactionLogs from "./components/TransactionLogs";
 import TransactionStatus from "./components/TransactionStatus";
 import WalletLogin from "./components/WalletLogin";
 import TokenSelector from "./components/TokenSelector";
+import TransferSettings from "./components/TransferSettings";
+import RecipientsInput from "./components/RecipientsInput";
 import { sendTokenTransfer } from "./lib/walletAuth";
 
 export default function Home() {
@@ -12,11 +14,11 @@ export default function Home() {
 
   // Initialize with default config
   const [config, setConfig] = useState({
-    rpcApi: "https://wax.qaraqol.com", // Fixed RPC endpoint, no longer user-configurable
+    rpcApi: "https://wax.qaraqol.com",
     contractName: "",
     tokenName: "",
     tokenPrecision: 4,
-    defaultMemo: "Disperse", // Now a default memo
+    defaultMemo: "Disperse",
     batchSize: 15,
   });
 
@@ -26,12 +28,7 @@ export default function Home() {
       try {
         const savedConfig = localStorage.getItem("disperseConfig");
         if (savedConfig) {
-          const loadedConfig = JSON.parse(savedConfig);
-          // Always use the default RPC endpoint
-          setConfig({
-            ...loadedConfig,
-            rpcApi: "https://wax.qaraqol.com",
-          });
+          setConfig(JSON.parse(savedConfig));
         }
       } catch (err) {
         console.error("Failed to load config from localStorage:", err);
@@ -40,7 +37,7 @@ export default function Home() {
   }, []);
 
   const [recipientsInput, setRecipientsInput] = useState("");
-  const [validationError, setValidationError] = useState("");
+  const [parsedRecipients, setParsedRecipients] = useState(null);
   const [logs, setLogs] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
@@ -53,18 +50,12 @@ export default function Home() {
   };
 
   const handleConfigUpdate = (newConfig) => {
-    // Ensure the RPC endpoint remains fixed
-    const updatedConfig = {
-      ...newConfig,
-      rpcApi: "https://wax.qaraqol.com",
-    };
-
-    setConfig(updatedConfig);
+    setConfig(newConfig);
 
     // Store the updated config in localStorage for persistence
     try {
       if (typeof window !== "undefined") {
-        localStorage.setItem("disperseConfig", JSON.stringify(updatedConfig));
+        localStorage.setItem("disperseConfig", JSON.stringify(newConfig));
       }
     } catch (err) {
       console.error("Failed to save config to localStorage:", err);
@@ -79,108 +70,6 @@ export default function Home() {
       tokenPrecision: tokenData.tokenPrecision,
     });
     setSelectedTokenBalance(tokenData.balance);
-  };
-
-  const validateAndParseRecipients = () => {
-    if (!recipientsInput.trim()) {
-      setValidationError("Please add at least one recipient");
-      return null;
-    }
-
-    try {
-      // Split by lines
-      const lines = recipientsInput
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line);
-
-      const errors = [];
-      const parsedRecipients = [];
-      let totalAmount = 0;
-
-      lines.forEach((line, lineIndex) => {
-        let parts = [];
-        let receiverName, amount, memo;
-
-        // Try to parse based on commas
-        if (line.includes(",")) {
-          parts = line.split(",").map((part) => part.trim());
-
-          if (parts.length >= 1) receiverName = parts[0];
-          if (parts.length >= 2) amount = parts[1];
-          if (parts.length >= 3) memo = parts[2];
-        }
-        // Try space-separated format as fallback
-        else {
-          parts = line.split(/\s+/);
-          if (parts.length >= 1) receiverName = parts[0];
-          if (parts.length >= 2) amount = parts[1];
-          // No memo support for space-separated format
-        }
-
-        // Use default memo if not specified
-        memo = memo || config.defaultMemo;
-
-        // Validate receiver name
-        if (!receiverName) {
-          errors.push(`Line ${lineIndex + 1}: Missing receiver name`);
-        } else if (!/^[a-z1-5.]{1,12}$/.test(receiverName)) {
-          errors.push(
-            `Line ${lineIndex + 1}: Invalid WAX account name "${receiverName}"`
-          );
-        }
-
-        // Validate amount
-        if (!amount) {
-          errors.push(`Line ${lineIndex + 1}: Missing amount`);
-        } else if (isNaN(amount) || Number(amount) <= 0) {
-          errors.push(`Line ${lineIndex + 1}: Invalid amount "${amount}"`);
-        }
-
-        if (receiverName && amount && !isNaN(amount) && Number(amount) > 0) {
-          const parsedAmount = Number(amount);
-          totalAmount += parsedAmount;
-
-          parsedRecipients.push({
-            receiverName,
-            amount: parsedAmount,
-            memo: memo,
-          });
-        }
-      });
-
-      // Check if total amount exceeds available balance
-      if (
-        selectedTokenBalance &&
-        totalAmount > parseFloat(selectedTokenBalance)
-      ) {
-        errors.push(
-          `Total amount (${totalAmount}) exceeds your available balance (${selectedTokenBalance})`
-        );
-      }
-
-      if (errors.length > 0) {
-        setValidationError(
-          errors.slice(0, 3).join("\n") +
-            (errors.length > 3
-              ? `\n...and ${errors.length - 3} more errors`
-              : "")
-        );
-        return null;
-      }
-
-      if (parsedRecipients.length === 0) {
-        setValidationError("No valid recipients found");
-        return null;
-      }
-
-      setValidationError("");
-      return parsedRecipients;
-    } catch (err) {
-      console.error("Error parsing recipients:", err);
-      setValidationError("Invalid input format");
-      return null;
-    }
   };
 
   const handleStartProcess = async () => {
@@ -199,9 +88,11 @@ export default function Home() {
       return;
     }
 
-    // Validate and parse recipients
-    const parsedRecipients = validateAndParseRecipients();
+    // Check if recipients are valid
     if (!parsedRecipients) {
+      setTransactionStatus({
+        error: "Please check your recipient list format",
+      });
       return;
     }
 
@@ -285,7 +176,12 @@ export default function Home() {
       senderName: "",
     }));
     setSelectedTokenBalance(null);
+    setParsedRecipients(null);
     addLog("Disconnected from wallet", "info");
+  };
+
+  const handleRecipientsValidation = (validatedRecipients) => {
+    setParsedRecipients(validatedRecipients);
   };
 
   const tabs = [
@@ -363,160 +259,23 @@ export default function Home() {
                       />
                     </div>
 
-                    {/* Simple Settings */}
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">
-                          Transfer Settings
-                        </h2>
-                        {config.contractName && config.tokenName && (
-                          <div className="px-3 py-1 bg-green-50 border border-green-100 rounded-md text-sm text-green-800">
-                            <span className="font-medium">
-                              {config.tokenName}
-                            </span>{" "}
-                            selected
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label
-                            htmlFor="defaultMemo"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Default Memo
-                          </label>
-                          <input
-                            type="text"
-                            name="defaultMemo"
-                            id="defaultMemo"
-                            value={config.defaultMemo}
-                            onChange={(e) =>
-                              handleConfigUpdate({
-                                ...config,
-                                defaultMemo: e.target.value,
-                              })
-                            }
-                            disabled={isProcessing}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                            placeholder="Disperse"
-                          />
-                        </div>
-
-                        <div>
-                          <label
-                            htmlFor="batchSize"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Batch Size
-                          </label>
-                          <input
-                            type="number"
-                            name="batchSize"
-                            id="batchSize"
-                            value={config.batchSize}
-                            onChange={(e) =>
-                              handleConfigUpdate({
-                                ...config,
-                                batchSize:
-                                  e.target.value === ""
-                                    ? ""
-                                    : Number(e.target.value),
-                              })
-                            }
-                            disabled={isProcessing}
-                            min="1"
-                            max="50"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      {config.contractName && config.tokenName && (
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-md">
-                          <h3 className="text-sm font-medium text-blue-800 mb-2">
-                            Token Details
-                          </h3>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Symbol:</span>
-                              <span className="font-medium">
-                                {config.tokenName}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Contract:</span>
-                              <span className="font-medium text-xs">
-                                {config.contractName}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Precision:</span>
-                              <span className="font-medium">
-                                {config.tokenPrecision}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Balance:</span>
-                              <span className="font-medium">
-                                {selectedTokenBalance}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {/* Transfer Settings */}
+                    <TransferSettings
+                      config={config}
+                      onUpdate={handleConfigUpdate}
+                      selectedTokenBalance={selectedTokenBalance}
+                      isProcessing={isProcessing}
+                    />
                   </div>
 
-                  {/* Recipients Input with Special Styling */}
-                  <div className="pt-4 border-t border-gray-200">
-                    <div className="mb-4">
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-lg border border-blue-200">
-                        <div className="flex justify-between items-center mb-2">
-                          <label
-                            htmlFor="recipientsInput"
-                            className="block text-sm font-medium text-blue-700"
-                          >
-                            <span className="border-b-2 border-blue-400 pb-0.5">
-                              Enter Recipients (one per line)
-                            </span>
-                          </label>
-                          {recipientsInput && (
-                            <button
-                              onClick={() => setRecipientsInput("")}
-                              className="text-xs text-red-600 hover:text-red-800"
-                              disabled={isProcessing}
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                        <textarea
-                          id="recipientsInput"
-                          rows={8}
-                          className="block w-full rounded-md border-blue-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm bg-white"
-                          value={recipientsInput}
-                          onChange={(e) => setRecipientsInput(e.target.value)}
-                          placeholder="account1,1.0000,Payment for services"
-                          disabled={isProcessing}
-                        ></textarea>
-                        <p className="mt-2 text-xs text-blue-700">
-                          Format: "account,amount,memo" (memo is optional, one
-                          entry per line)
-                        </p>
-
-                        {validationError && (
-                          <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded-md">
-                            <p className="text-xs text-red-600 whitespace-pre-line">
-                              {validationError}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  {/* Recipients Input */}
+                  <RecipientsInput
+                    value={recipientsInput}
+                    onChange={setRecipientsInput}
+                    onValidation={handleRecipientsValidation}
+                    selectedTokenBalance={selectedTokenBalance}
+                    isProcessing={isProcessing}
+                  />
 
                   {/* Transfer Button */}
                   <div className="pt-4 border-t border-gray-200 flex justify-end">
@@ -526,14 +285,14 @@ export default function Home() {
                         !config.senderName ||
                         !config.contractName ||
                         !config.tokenName ||
-                        !recipientsInput.trim() ||
+                        !parsedRecipients ||
                         isProcessing
                       }
                       className={`px-6 py-3 rounded-md text-base font-medium ${
                         !config.senderName ||
                         !config.contractName ||
                         !config.tokenName ||
-                        !recipientsInput.trim() ||
+                        !parsedRecipients ||
                         isProcessing
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-blue-600 text-white hover:bg-blue-700"
