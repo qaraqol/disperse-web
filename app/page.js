@@ -238,8 +238,7 @@ export default function Home() {
                       />
                     </div>
                     <p className="mt-6 text-sm text-gray-600">
-                      Connect with Anchor or WAX Cloud Wallet to access your
-                      tokens
+                      Connect with Anchor or WAX Cloud Wallet to start
                     </p>
                   </div>
                 </div>
@@ -254,7 +253,7 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:min-h-[400px]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:min-h-[450px]">
                     <div className="h-full">
                       <TokenSelector
                         walletAccount={walletData?.account}

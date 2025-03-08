@@ -24,7 +24,7 @@ const TransferSettings = ({
   };
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-6 h-full flex flex-col">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Transfer Settings</h2>
         {config.contractName && config.tokenName && (
@@ -34,7 +34,7 @@ const TransferSettings = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div>
           <label
             htmlFor="defaultMemo"
@@ -81,7 +81,7 @@ const TransferSettings = ({
           </p>
         </div>
 
-        <div>
+        <div className="lg:col-span-2">
           <label
             htmlFor="rpcApi"
             className="block text-sm font-medium text-gray-700"
@@ -105,54 +105,55 @@ const TransferSettings = ({
         </div>
       </div>
 
-      {/* Token details box that fills remaining space */}
+      {/* Token details box with more spacing and contrast */}
       {config.contractName && config.tokenName ? (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-md flex-grow flex flex-col">
-          <h3 className="text-sm font-medium text-blue-800 mb-3">
+        <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-md flex-grow flex flex-col">
+          <h3 className="text-base font-medium text-blue-800 p-4 border-b border-blue-200">
             Token Details
           </h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm flex-grow">
-            <div className="flex justify-between items-center py-1 px-2 bg-blue-100/40 rounded">
-              <span className="text-gray-600">Symbol:</span>
-              <span className="font-medium">{config.tokenName}</span>
-            </div>
-            <div className="flex justify-between items-center py-1 px-2 bg-blue-100/40 rounded">
-              <span className="text-gray-600">Contract:</span>
-              <span className="font-medium text-xs">{config.contractName}</span>
-            </div>
-            <div className="flex justify-between items-center py-1 px-2 bg-blue-100/40 rounded">
-              <span className="text-gray-600">Precision:</span>
-              <span className="font-medium">{config.tokenPrecision}</span>
-            </div>
-            <div className="flex justify-between items-center py-1 px-2 bg-blue-100/40 rounded">
-              <span className="text-gray-600">Balance:</span>
-              <span className="font-medium">{selectedTokenBalance}</span>
+          <div className="grid grid-cols-1 gap-y-4 p-4 flex-grow">
+            <div className="bg-blue-100 rounded-md p-3 shadow-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Symbol:</span>
+                <span className="font-bold text-blue-800">
+                  {config.tokenName}
+                </span>
+              </div>
             </div>
 
-            {/* Additional token info items to fill space */}
-            <div className="col-span-2 mt-2">
-              <div className="text-xs text-gray-500 mt-2 bg-white/80 p-3 rounded border border-blue-100">
-                <p className="mb-2 text-blue-800 font-medium">
-                  About This Token
-                </p>
-                <p>
-                  This token is managed by{" "}
-                  <span className="font-medium">{config.contractName}</span>
-                </p>
-                <p className="mt-1">
-                  You can transfer up to{" "}
-                  <span className="font-medium">
-                    {selectedTokenBalance} {config.tokenName}
-                  </span>{" "}
-                  using this tool.
-                </p>
+            <div className="bg-blue-100 rounded-md p-3 shadow-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Contract:</span>
+                <span className="font-medium text-blue-800">
+                  {config.contractName}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-blue-100 rounded-md p-3 shadow-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">
+                  Decimal Precision:
+                </span>
+                <span className="font-bold text-blue-800">
+                  {config.tokenPrecision}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-blue-100 rounded-md p-3 shadow-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Balance:</span>
+                <span className="font-bold text-blue-800">
+                  {selectedTokenBalance}
+                </span>
               </div>
             </div>
           </div>
         </div>
       ) : (
         // Placeholder to keep spacing consistent
-        <div className="mt-4 p-4 border border-gray-200 rounded-md flex-grow bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
+        <div className="mt-6 p-4 border-2 border-gray-200 rounded-md flex-grow bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
           Select a token to view details
         </div>
       )}
