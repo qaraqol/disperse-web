@@ -224,23 +224,28 @@ export default function Home() {
           {activeTab === "transfer" && (
             <div>
               {!walletData ? (
-                // Centered wallet login when not connected
-                <div className="flex justify-center items-center py-12">
-                  <div className="text-center">
+                // Centered wallet login when not connected - fixed alignment
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-8 text-center shadow-sm w-full max-w-md">
                     <h2 className="text-xl font-semibold mb-6 text-gray-700">
                       Connect Your Wallet to Begin
                     </h2>
-                    <WalletLogin
-                      onLogin={handleWalletLogin}
-                      onLogout={handleWalletLogout}
-                      walletData={walletData}
-                    />
+                    <div className="flex justify-center">
+                      <WalletLogin
+                        onLogin={handleWalletLogin}
+                        onLogout={handleWalletLogout}
+                        walletData={walletData}
+                      />
+                    </div>
+                    <p className="mt-6 text-sm text-gray-600">
+                      Connect with Anchor or WAX Cloud Wallet to access your
+                      tokens
+                    </p>
                   </div>
                 </div>
               ) : (
                 // Main content when wallet is connected
                 <div className="space-y-6">
-                  {/* Wallet info at top */}
                   <div className="flex justify-end">
                     <WalletLogin
                       onLogin={handleWalletLogin}
@@ -249,9 +254,8 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Token Selection */}
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:min-h-[400px]">
+                    <div className="h-full">
                       <TokenSelector
                         walletAccount={walletData?.account}
                         onTokenSelect={handleTokenSelect}
@@ -259,16 +263,16 @@ export default function Home() {
                       />
                     </div>
 
-                    {/* Transfer Settings */}
-                    <TransferSettings
-                      config={config}
-                      onUpdate={handleConfigUpdate}
-                      selectedTokenBalance={selectedTokenBalance}
-                      isProcessing={isProcessing}
-                    />
+                    <div className="h-full">
+                      <TransferSettings
+                        config={config}
+                        onUpdate={handleConfigUpdate}
+                        selectedTokenBalance={selectedTokenBalance}
+                        isProcessing={isProcessing}
+                      />
+                    </div>
                   </div>
 
-                  {/* Recipients Input */}
                   <RecipientsInput
                     value={recipientsInput}
                     onChange={setRecipientsInput}
@@ -277,7 +281,6 @@ export default function Home() {
                     isProcessing={isProcessing}
                   />
 
-                  {/* Transfer Button */}
                   <div className="pt-4 border-t border-gray-200 flex justify-end">
                     <button
                       onClick={handleStartProcess}
